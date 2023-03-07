@@ -3,6 +3,13 @@
 # Sources: https://phys.libretexts.org/Bookshelves/Astronomy__Cosmology/Celestial_Mechanics_(Tatum)/
 # 09%3A_The_Two_Body_Problem_in_Two_Dimensions/9.05%3A_Position_in_an_Elliptic_Orbit
 
+# To do:
+# 1. Clean up
+# 2. Add code to individual functions
+# 3. Bug fix: Sun altitude >90°/latitude <23.5°
+# 4. Add functionality: longitude
+# 5. Increase accuracy? (eg. stellar aberration, refraction, etc...)
+
 import math
 import numpy as np
 import matplotlib.pyplot as plt
