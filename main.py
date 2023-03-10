@@ -4,6 +4,14 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
+# Time of day in hours since midnight
+T0 = 12
+# Observer latitude
+lat = 45*math.pi/180
+# Note that plotting latitudes below 23.5° yields "messy" plots,
+# since only RA between 0 and 360° can be plotted
+
+# Below are constants not intended to be changed
 # Earth's semi-major axis in m
 a = 149597887500
 # Earth's orbital eccentricity
@@ -24,7 +32,7 @@ d = 366
 # Time variable
 # Vernal equinox 2023/3/20 2124h UTC
 # Difference to perihelion: 6499441s
-T = np.linspace(0+20*60*60, 365*24*60*60+20*60*60, d)
+T = np.linspace((8+T0)*60*60, 365*24*60*60+(8+T0)*60*60, d)
 # Regular seconds to sidereal seconds
 t2s = 24*60*60/86164.0905
 # Coordinates
@@ -40,12 +48,14 @@ dec = np.linspace(0, 1, d)
 az = np.linspace(0, 1, d)
 # Altitude/elevation angle
 alt = np.linspace(0, 1, d)
+# Hour angle
+H = np.linspace(0, 1, d)
+# Local sidereal time
+LST = np.linspace(0, 1, d)
 # Angle in ecliptic of vernal equinox relative to perihelion: 1.32612508rad
 ve = 1.32612508
 # Earth axial tilt 2023/1/1
 at = 23.4362871883*math.pi/180
-# Observer latitude
-lat = 65*math.pi/180
 # Kepler's 3rd law for orbital period in s:
 P = math.sqrt(4*(math.pi**2)*(a**3)/(G*M))
 
@@ -54,9 +64,13 @@ def rad2deg(rad):
     return rad*180/math.pi
 
 
+def deg2rad(deg):
+    return deg*math.pi/180
+
+
 # Uses abs in floor to ensure negative numbers are handled correctly
 def deg2hms(deg):
-    h = math.floor(abs(deg))*(deg/abs(deg))
+    h = math.floor(abs(deg/15))*(deg/abs(deg))
     min = (abs(deg)-math.floor(abs(deg)))*60
     sec = (min-math.floor(min))*60
     min = math.floor(min)
@@ -82,10 +96,8 @@ def ecliptic_coords(t):
     # Rectangular coordinates of ellipse traced by Earth's orbit
     x = a * math.cos(E)
     y = b * math.sin(E)
-
     # True anomaly zeroed at vernal equinox, and corrected for Earth vs Sun
     v = (math.atan2((math.sqrt(1 - e ** 2) * math.sin(E)), (math.cos(E) - e)) - ve - math.pi)
-
     return x, y, v
 
 
@@ -108,24 +120,32 @@ def lst_calc(ST0, t):
 # Calculates horizontal coordinates using equatorial coordinates, observers latitude, and local sidereal time
 def horizontal_coords(RA, dec, lat, LST):
     H = LST - RA
+    if H < 0:
+        H = H+2*math.pi
     alt = math.asin(math.sin(dec) * math.sin(lat) + math.cos(dec) * math.cos(lat) * math.cos(H))
-    az = math.asin(-math.sin(H) * math.cos(dec) / math.cos(alt))
-    return az, alt
+    az = math.acos((math.sin(dec) - math.sin(alt) * math.sin(lat)) / (math.cos(alt) * math.cos(lat)))
+    if H > math.pi:
+        az = 2*math.pi-az
+    return az, alt, H
 
 
 i = 0
 for t in T:
     x, y, v = ecliptic_coords(t)
-    RA, dec = equatorial_coords(v)
-    LST = lst_calc(ST0, t)
-    az[i], alt[i] = horizontal_coords(RA, dec, lat, LST)
+    RA[i], dec[i] = equatorial_coords(v)
+    LST[i] = lst_calc(ST0, t)
+    az[i], alt[i], H[i] = horizontal_coords(RA[i], dec[i], lat, LST[i])
     i = i+1
 
-
 #plt.scatter(x, y)
-#plt.scatter(t, v)
-#plt.scatter(t, dec)
+#plt.scatter(T, v)
+#plt.scatter(T, dec)
 #plt.scatter(RA, dec)
-plt.plot(az, alt)
+#plt.plot(T, rad2deg(LST))
+#plt.plot(T, rad2deg(RA))
+#plt.plot(T, rad2deg(H))
+#plt.plot(T, rad2deg(alt))
+#plt.plot(T, rad2deg(az))
+plt.plot(rad2deg(az), rad2deg(alt))
 plt.axis('equal')
 plt.show()
